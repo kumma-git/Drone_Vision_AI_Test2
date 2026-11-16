@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 from pathlib import Path
 import base64
+import uuid
 
 # ==========================================
 # DRONE VISION AI
@@ -17,10 +18,15 @@ st.set_page_config(
 )
 
 BASE_DIR = Path(__file__).parent
+
 MODEL_PATH = BASE_DIR / "keras_model.h5"
 LABELS_PATH = BASE_DIR / "labels.txt"
 CAMO_PATH = BASE_DIR / "flecktarn.jpg"
 BANNER_PATH = BASE_DIR / "drone_banner.png"
+
+# Speicherordner für hochgeladene Bilder
+SAVED_IMAGES_DIR = BASE_DIR / "saved_images"
+SAVED_IMAGES_DIR.mkdir(exist_ok=True)
 
 IMAGE_SIZE = (224, 224)
 
@@ -30,6 +36,7 @@ IMAGE_SIZE = (224, 224)
 # ==========================================
 
 if CAMO_PATH.exists():
+
     image_data = base64.b64encode(
         CAMO_PATH.read_bytes()
     ).decode("utf-8")
@@ -45,6 +52,7 @@ if CAMO_PATH.exists():
         background-position: center;
         background-attachment: fixed;
     """
+
 else:
     background_css = "background-color: #252c22;"
 
@@ -84,16 +92,6 @@ h1, h2, h3 {{
     letter-spacing: 0.7px;
 }}
 
-/* Banner */
-
-div[data-testid="stImage"] img {{
-    border-radius: 14px;
-    border: 1px solid #65734d;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-}}
-
-/* Panels */
-
 .panel {{
     background: var(--panel);
     border: 1px solid var(--line);
@@ -129,16 +127,12 @@ div[data-testid="stImage"] img {{
     color: var(--muted);
 }}
 
-/* Upload */
-
 div[data-testid="stFileUploader"] {{
     background: #252c22;
     border: 1px dashed #89965d;
     border-radius: 13px;
     padding: 14px;
 }}
-
-/* Buttons */
 
 .stButton > button {{
     background: #89965d;
@@ -157,6 +151,10 @@ div[data-testid="stFileUploader"] {{
     background-color: #a3ad73;
 }}
 
+div[data-testid="stImage"] img {{
+    border-radius: 10px;
+}}
+
 hr {{
     border-color: #41483a;
 }}
@@ -170,27 +168,28 @@ footer {{
 
 
 # ==========================================
-# BANNER GANZ OBEN
+# BANNER
 # ==========================================
 
 if BANNER_PATH.exists():
+
     st.image(
         str(BANNER_PATH),
         use_container_width=True
     )
+
 else:
-    st.warning(
-        "Banner nicht gefunden. "
-        "Bitte drone_banner.png in dein GitHub-Repository hochladen."
-    )
+
+    st.warning("drone_banner.png wurde nicht gefunden.")
 
 
 # ==========================================
-# MODELL LADEN
+# KI-MODELL LADEN
 # ==========================================
 
 @st.cache_resource
 def load_model():
+
     return tf.keras.models.load_model(
         MODEL_PATH,
         compile=False
@@ -209,6 +208,7 @@ def load_labels():
     with open(LABELS_PATH, "r", encoding="utf-8") as file:
 
         for line in file:
+
             line = line.strip()
 
             if not line:
@@ -233,18 +233,41 @@ def predict_image(image, model, labels):
     image = image.convert("RGB").resize(IMAGE_SIZE)
 
     array = np.asarray(image, dtype=np.float32)
+
     array = (array / 127.5) - 1.0
+
     array = np.expand_dims(array, axis=0)
 
     scores = model.predict(array, verbose=0)[0]
 
     if len(scores) != len(labels):
+
         raise ValueError(
             f"Das Modell liefert {len(scores)} Werte, "
             f"aber labels.txt enthält {len(labels)} Labels."
         )
 
     return scores
+
+
+# ==========================================
+# BILD SPEICHERN
+# ==========================================
+
+def save_image(uploaded_file):
+
+    extension = Path(uploaded_file.name).suffix.lower()
+
+    if extension not in [".jpg", ".jpeg", ".png", ".webp"]:
+        extension = ".jpg"
+
+    filename = f"image_{uuid.uuid4().hex[:10]}{extension}"
+
+    save_path = SAVED_IMAGES_DIR / filename
+
+    save_path.write_bytes(uploaded_file.getvalue())
+
+    return filename
 
 
 # ==========================================
@@ -341,9 +364,25 @@ with right:
             use_container_width=True
         )
 
+        # Bild speichern
+        if st.button(
+            "📥 Bild im App-Speicher speichern",
+            use_container_width=True
+        ):
+
+            filename = save_image(uploaded_file)
+
+            st.success(
+                f"Bild erfolgreich gespeichert: {filename}"
+            )
+
+        st.divider()
+
+        # KI-Analyse
         try:
 
             model = load_model()
+
             labels = load_labels()
 
             scores = predict_image(
@@ -353,7 +392,9 @@ with right:
             )
 
             best_index = int(np.argmax(scores))
+
             best_label = labels[best_index]
+
             confidence = float(scores[best_index]) * 100
 
             st.html("""
@@ -393,6 +434,73 @@ with right:
             st.error(
                 f"Das Modell konnte nicht ausgeführt werden: {error}"
             )
+
+
+# ==========================================
+# 04 / BILDERGALERIE
+# ==========================================
+
+st.divider()
+
+st.html("""
+<div class="panel">
+    <div class="panel-title">
+        04 / GESPEICHERTE BILDER
+    </div>
+
+    <p class="small-note">
+        Deine gespeicherten Bilder in der Drone Vision AI App.
+    </p>
+</div>
+""")
+
+saved_images = sorted(
+    [
+        file for file in SAVED_IMAGES_DIR.iterdir()
+        if file.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]
+    ],
+    key=lambda file: file.stat().st_mtime,
+    reverse=True
+)
+
+if not saved_images:
+
+    st.info(
+        "Noch keine Bilder gespeichert. "
+        "Lade ein Bild hoch und klicke auf 'Bild im App-Speicher speichern'."
+    )
+
+else:
+
+    st.write(
+        f"**{len(saved_images)} gespeicherte Bilder**"
+    )
+
+    gallery_columns = st.columns(3)
+
+    for index, image_path in enumerate(saved_images):
+
+        with gallery_columns[index % 3]:
+
+            gallery_image = Image.open(image_path)
+
+            st.image(
+                gallery_image,
+                use_container_width=True
+            )
+
+            st.caption(image_path.name)
+
+            with st.expander("Bild ansehen"):
+
+                st.image(
+                    gallery_image,
+                    use_container_width=True
+                )
+
+                st.write(
+                    f"Dateiname: {image_path.name}"
+                )
 
 
 # ==========================================
