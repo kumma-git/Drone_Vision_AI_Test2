@@ -1,0 +1,5 @@
+0 Flughafen
+1 Wald
+2 Stadt
+3 Ölraffenerie
+4 Fluss
