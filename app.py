@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).parent
 MODEL_PATH = BASE_DIR / "keras_model.h5"
 LABELS_PATH = BASE_DIR / "labels.txt"
 CAMO_PATH = BASE_DIR / "flecktarn.jpg"
+BANNER_PATH = BASE_DIR / "drone_banner.png"
 
 IMAGE_SIZE = (224, 224)
 
@@ -54,6 +55,7 @@ else:
 
 st.markdown(f"""
 <style>
+
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {{
@@ -73,7 +75,7 @@ st.markdown(f"""
 
 .block-container {{
     max-width: 1180px;
-    padding-top: 2rem;
+    padding-top: 1.5rem;
     padding-bottom: 3rem;
 }}
 
@@ -82,33 +84,15 @@ h1, h2, h3 {{
     letter-spacing: 0.7px;
 }}
 
-.hero {{
-    background: linear-gradient(115deg, rgba(48,58,42,.97), rgba(28,36,26,.97));
+/* Banner */
+
+div[data-testid="stImage"] img {{
+    border-radius: 14px;
     border: 1px solid #65734d;
-    border-radius: 18px;
-    padding: 30px;
-    margin-bottom: 25px;
-    box-shadow: 0 12px 35px rgba(0,0,0,.35);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }}
 
-.eyebrow {{
-    color: var(--olive-bright);
-    font-size: 11px;
-    letter-spacing: 2.4px;
-    font-weight: 700;
-}}
-
-.hero h1 {{
-    font-size: 45px;
-    margin: 5px 0 0;
-    color: #f3f4ec;
-}}
-
-.hero p {{
-    color: #c0c6b5;
-    margin: 5px 0 0;
-    font-size: 14px;
-}}
+/* Panels */
 
 .panel {{
     background: var(--panel);
@@ -145,12 +129,16 @@ h1, h2, h3 {{
     color: var(--muted);
 }}
 
+/* Upload */
+
 div[data-testid="stFileUploader"] {{
     background: #252c22;
     border: 1px dashed #89965d;
     border-radius: 13px;
     padding: 14px;
 }}
+
+/* Buttons */
 
 .stButton > button {{
     background: #89965d;
@@ -176,8 +164,25 @@ hr {{
 footer {{
     visibility: hidden;
 }}
+
 </style>
 """, unsafe_allow_html=True)
+
+
+# ==========================================
+# BANNER GANZ OBEN
+# ==========================================
+
+if BANNER_PATH.exists():
+    st.image(
+        str(BANNER_PATH),
+        use_container_width=True
+    )
+else:
+    st.warning(
+        "Banner nicht gefunden. "
+        "Bitte drone_banner.png in dein GitHub-Repository hochladen."
+    )
 
 
 # ==========================================
@@ -243,24 +248,6 @@ def predict_image(image, model, labels):
 
 
 # ==========================================
-# HEADER
-# ==========================================
-
-st.html("""
-<div class="hero">
-    <div class="eyebrow">
-        IMAGE CLASSIFICATION SYSTEM · AI TECHNOLOGY
-    </div>
-    <h1>DRONE VISION AI</h1>
-    <p>
-        KI-gestützte Bildklassifizierung
-        · Intelligent Image Recognition
-    </p>
-</div>
-""")
-
-
-# ==========================================
 # HAUPTBEREICH
 # ==========================================
 
@@ -302,18 +289,22 @@ with left:
     st.html("""
     <div class="panel">
         <div class="panel-title">02 / MODELLSTATUS</div>
+
         <p>
             <span style="color:#b9c78a;">●</span>
             Modell-Datei: <b>keras_model.h5</b>
         </p>
+
         <p>
             <span style="color:#b9c78a;">●</span>
             Klassen-Datei: <b>labels.txt</b>
         </p>
+
         <p>
             <span style="color:#b9c78a;">●</span>
             Hintergrund: <b>Flecktarn</b>
         </p>
+
         <p class="small-note">
             Eingabegröße: 224 × 224 Pixel
         </p>
@@ -373,6 +364,7 @@ with right:
 
             st.html(f"""
             <div class="prediction">{best_label}</div>
+
             <p class="small-note">
                 Modell-Konfidenz: <b>{confidence:.1f}%</b>
             </p>
