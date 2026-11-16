@@ -25,54 +25,48 @@ IMAGE_SIZE = (224, 224)
 
 
 # ==========================================
-# HINTERGRUND LADEN
+# FLECKTARN HINTERGRUND
 # ==========================================
 
-def load_camo_background():
-    if CAMO_PATH.exists():
-        image_data = base64.b64encode(
-            CAMO_PATH.read_bytes()
-        ).decode("utf-8")
+if CAMO_PATH.exists():
+    image_data = base64.b64encode(
+        CAMO_PATH.read_bytes()
+    ).decode("utf-8")
 
-        return f"url('data:image/jpeg;base64,{image_data}')"
-
-    return "#252c22"
-
-
-background = load_camo_background()
+    background_css = f"""
+        background-image:
+            linear-gradient(
+                rgba(12, 17, 11, 0.78),
+                rgba(12, 17, 11, 0.78)
+            ),
+            url("data:image/jpeg;base64,{image_data}");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    """
+else:
+    background_css = "background-color: #252c22;"
 
 
 # ==========================================
-# MILITARY DESIGN
+# DESIGN
 # ==========================================
 
 st.markdown(f"""
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {{
     --olive: #89965d;
     --olive-bright: #bdc98b;
     --panel: rgba(25, 31, 23, 0.96);
-    --panel-light: #2b3427;
     --text: #eef0e7;
     --muted: #a8ad9e;
     --line: #46503b;
 }}
 
 .stApp {{
-    background-image:
-        linear-gradient(
-            rgba(12, 17, 11, 0.78),
-            rgba(12, 17, 11, 0.78)
-        ),
-        {background};
-
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-
+    {background_css}
     color: var(--text);
     font-family: 'Inter', sans-serif;
 }}
@@ -89,17 +83,12 @@ h1, h2, h3 {{
 }}
 
 .hero {{
-    background: linear-gradient(
-        115deg,
-        rgba(48, 58, 42, 0.97),
-        rgba(28, 36, 26, 0.97)
-    );
-
+    background: linear-gradient(115deg, rgba(48,58,42,.97), rgba(28,36,26,.97));
     border: 1px solid #65734d;
     border-radius: 18px;
     padding: 30px;
     margin-bottom: 25px;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.35);
+    box-shadow: 0 12px 35px rgba(0,0,0,.35);
 }}
 
 .eyebrow {{
@@ -127,7 +116,7 @@ h1, h2, h3 {{
     border-radius: 16px;
     padding: 21px;
     margin-bottom: 16px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+    box-shadow: 0 8px 25px rgba(0,0,0,.25);
 }}
 
 .panel-title {{
@@ -187,13 +176,12 @@ hr {{
 footer {{
     visibility: hidden;
 }}
-
 </style>
 """, unsafe_allow_html=True)
 
 
 # ==========================================
-# KI-MODELL LADEN
+# MODELL LADEN
 # ==========================================
 
 @st.cache_resource
@@ -216,7 +204,6 @@ def load_labels():
     with open(LABELS_PATH, "r", encoding="utf-8") as file:
 
         for line in file:
-
             line = line.strip()
 
             if not line:
@@ -241,15 +228,12 @@ def predict_image(image, model, labels):
     image = image.convert("RGB").resize(IMAGE_SIZE)
 
     array = np.asarray(image, dtype=np.float32)
-
     array = (array / 127.5) - 1.0
-
     array = np.expand_dims(array, axis=0)
 
     scores = model.predict(array, verbose=0)[0]
 
     if len(scores) != len(labels):
-
         raise ValueError(
             f"Das Modell liefert {len(scores)} Werte, "
             f"aber labels.txt enthält {len(labels)} Labels."
@@ -262,22 +246,18 @@ def predict_image(image, model, labels):
 # HEADER
 # ==========================================
 
-st.markdown("""
+st.html("""
 <div class="hero">
-
     <div class="eyebrow">
         IMAGE CLASSIFICATION SYSTEM · AI TECHNOLOGY
     </div>
-
     <h1>DRONE VISION AI</h1>
-
     <p>
         KI-gestützte Bildklassifizierung
         · Intelligent Image Recognition
     </p>
-
 </div>
-""", unsafe_allow_html=True)
+""")
 
 
 # ==========================================
@@ -296,14 +276,11 @@ left, right = st.columns(
 
 with left:
 
-    st.markdown("""
+    st.html("""
     <div class="panel">
-
-        <div class="panel-title">
-            01 / BILDEINGABE
-        </div>
-
-    """, unsafe_allow_html=True)
+        <div class="panel-title">01 / BILDEINGABE</div>
+    </div>
+    """)
 
     st.write(
         "Lade ein Bild hoch, das von deinem "
@@ -316,44 +293,32 @@ with left:
         label_visibility="collapsed"
     )
 
-    st.markdown("""
-        <p class="small-note">
-            Unterstützte Formate: JPG, JPEG, PNG, WEBP
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.html("""
+    <p class="small-note">
+        Unterstützte Formate: JPG, JPEG, PNG, WEBP
+    </p>
+    """)
 
-
-    # MODELLSTATUS
-
-    st.markdown("""
+    st.html("""
     <div class="panel">
-
-        <div class="panel-title">
-            02 / MODELLSTATUS
-        </div>
-
+        <div class="panel-title">02 / MODELLSTATUS</div>
         <p>
             <span style="color:#b9c78a;">●</span>
             Modell-Datei: <b>keras_model.h5</b>
         </p>
-
         <p>
             <span style="color:#b9c78a;">●</span>
             Klassen-Datei: <b>labels.txt</b>
         </p>
-
         <p>
             <span style="color:#b9c78a;">●</span>
             Hintergrund: <b>Flecktarn</b>
         </p>
-
         <p class="small-note">
             Eingabegröße: 224 × 224 Pixel
         </p>
-
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
 
 # ==========================================
@@ -362,13 +327,11 @@ with left:
 
 with right:
 
-    st.markdown("""
+    st.html("""
     <div class="panel">
-
-        <div class="panel-title">
-            03 / ANALYSEERGEBNIS
-        </div>
-    """, unsafe_allow_html=True)
+        <div class="panel-title">03 / ANALYSEERGEBNIS</div>
+    </div>
+    """)
 
     if uploaded_file is None:
 
@@ -390,7 +353,6 @@ with right:
         try:
 
             model = load_model()
-
             labels = load_labels()
 
             scores = predict_image(
@@ -400,40 +362,25 @@ with right:
             )
 
             best_index = int(np.argmax(scores))
-
             best_label = labels[best_index]
-
             confidence = float(scores[best_index]) * 100
 
-
-            # HAUPTPROGNOSE
-
-            st.markdown("""
+            st.html("""
             <div class="metric-label">
                 WAHRSCHEINLICHSTE KLASSE
             </div>
-            """, unsafe_allow_html=True)
+            """)
 
-            st.markdown(
-                f'<div class="prediction">{best_label}</div>',
-                unsafe_allow_html=True
-            )
-
-            st.markdown(
-                f'<p class="small-note">'
-                f'Modell-Konfidenz: <b>{confidence:.1f}%</b>'
-                f'</p>',
-                unsafe_allow_html=True
-            )
+            st.html(f"""
+            <div class="prediction">{best_label}</div>
+            <p class="small-note">
+                Modell-Konfidenz: <b>{confidence:.1f}%</b>
+            </p>
+            """)
 
             st.divider()
 
-
-            # ALLE KLASSEN
-
-            st.markdown(
-                "**Wahrscheinlichkeiten aller Klassen**"
-            )
+            st.markdown("**Wahrscheinlichkeiten aller Klassen**")
 
             order = np.argsort(scores)[::-1]
 
@@ -449,7 +396,6 @@ with right:
                     float(np.clip(scores[index], 0, 1))
                 )
 
-
         except Exception as error:
 
             st.error(
@@ -457,14 +403,11 @@ with right:
             )
 
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-
 # ==========================================
 # FOOTER
 # ==========================================
 
-st.markdown("""
+st.html("""
 <div style="
     text-align:center;
     color:#a0a68f;
@@ -472,16 +415,10 @@ st.markdown("""
     margin-top:25px;
     letter-spacing:1px;
 ">
-
     DRONE VISION AI
-
     <br>
-
     AI IMAGE CLASSIFICATION SYSTEM
-
     <br><br>
-
     EDUCATIONAL PROJECT · MODEL PREDICTIONS MAY BE INCORRECT
-
 </div>
-""", unsafe_allow_html=True)
+""")
